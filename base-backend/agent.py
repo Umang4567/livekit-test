@@ -45,13 +45,12 @@ class Assistant(Agent):
 
 async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
-        stt=cartesia.STT(
-            model="ink-whisper",
+        stt = openai.STT(
+            model="whisper-1",
         ),
         llm=openai.LLM(model="gpt-4o-mini"),
-        tts=cartesia.TTS(
-            model="sonic-2",
-            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
+        tts=deepgram.TTS(
+            model="aura-asteria-en",
         ),
         vad=silero.VAD.load(),
         # turn_detection=MultilingualModel(), # NOTE: Temporarily disabled due to runtime errors
