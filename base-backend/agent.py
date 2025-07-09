@@ -9,6 +9,8 @@ from livekit.plugins import (
     deepgram,
     noise_cancellation,
     silero,
+    groq,
+    cartesia,
 )
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -43,9 +45,14 @@ class Assistant(Agent):
 
 async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
-        stt=openai.STT(model="whisper-1"),
+        stt=cartesia.STT(
+            model="ink-whisper",
+        ),
         llm=openai.LLM(model="gpt-4o-mini"),
-        tts=openai.TTS(voice="alloy"),
+        tts=cartesia.TTS(
+            model="sonic-2",
+            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
+        ),
         vad=silero.VAD.load(),
         # turn_detection=MultilingualModel(), # NOTE: Temporarily disabled due to runtime errors
     )
