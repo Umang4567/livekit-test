@@ -11,6 +11,7 @@ from livekit.plugins import (
     silero,
     groq,
     cartesia,
+    sarvam,
 )
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -45,12 +46,14 @@ class Assistant(Agent):
 
 async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
-        stt = openai.STT(
-            model="whisper-1",
+        stt=sarvam.STT(
+            language="en-IN",
+            model="saarika:v2.5",
         ),
         llm=openai.LLM(model="gpt-4o-mini"),
-        tts=deepgram.TTS(
-            model="aura-asteria-en",
+        tts=sarvam.TTS(
+            target_language_code="en-IN",
+            speaker="anushka",
         ),
         vad=silero.VAD.load(),
         # turn_detection=MultilingualModel(), # NOTE: Temporarily disabled due to runtime errors
