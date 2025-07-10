@@ -3,14 +3,11 @@
 import { useEffect, useState } from 'react';
 import { MonitorIcon, MoonIcon, SunIcon } from '@phosphor-icons/react';
 import type { ThemeMode } from '@/lib/types';
-import { THEME_MEDIA_QUERY, THEME_STORAGE_KEY, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+// import { THEME_MEDIA_QUERY, THEME_STORAGE_KEY, cn } from '@/lib/utils';
 
 const THEME_SCRIPT = `
   const doc = document.documentElement;
-  const theme = localStorage.getItem("${THEME_STORAGE_KEY}") ?? "system";
-
-  if (theme === "system") {
-    if (window.matchMedia("${THEME_MEDIA_QUERY}").matches) {
       doc.classList.add("dark");
     } else {
       doc.classList.add("light");
@@ -51,11 +48,11 @@ export function ApplyThemeScript() {
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const [theme, setTheme] = useState<ThemeMode | undefined>(undefined);
 
-  useEffect(() => {
-    const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) ?? 'system';
+  // useEffect(() => {
+  //   const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) ?? 'system';
 
-    setTheme(storedTheme);
-  }, []);
+  //   setTheme(storedTheme);
+  // }, []);
 
   function handleThemeChange(theme: ThemeMode) {
     applyTheme(theme);

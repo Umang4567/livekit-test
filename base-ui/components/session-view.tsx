@@ -15,7 +15,7 @@ import { ChatMessageView } from '@/components/livekit/chat/chat-message-view';
 import { MediaTiles } from '@/components/livekit/media-tiles';
 import useChatAndTranscription from '@/hooks/useChatAndTranscription';
 import { useDebugMode } from '@/hooks/useDebug';
-import type { AppConfig } from '@/lib/types';
+import type { AppConfig, LanguageSelection } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 function isAgentAvailable(agentState: AgentState) {
@@ -26,12 +26,14 @@ interface SessionViewProps {
   appConfig: AppConfig;
   disabled: boolean;
   sessionStarted: boolean;
+  selectedLanguages?: LanguageSelection | null;
 }
 
 export const SessionView = ({
   appConfig,
   disabled,
   sessionStarted,
+  selectedLanguages,
   ref,
 }: React.ComponentProps<'div'> & SessionViewProps) => {
   const { state: agentState } = useVoiceAssistant();

@@ -1,11 +1,5 @@
-import { headers } from 'next/headers';
-import { App } from '@/components/app';
-import { getAppConfig, getOrigin } from '@/lib/utils';
+import LanguageSelectionPage from '@/components/pages/language-selection';
 
-export default async function Page() {
-  const hdrs = await headers();
-  const origin = getOrigin(hdrs);
-  const appConfig = await getAppConfig(origin);
-
-  return <App appConfig={appConfig} />;
+export default function HomePage() {
+  return <LanguageSelectionPage />;
 }

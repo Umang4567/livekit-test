@@ -16,7 +16,29 @@ export type ConnectionDetails = {
   participantToken: string;
 };
 
+// Handle both GET and POST requests
 export async function GET() {
+  return createConnection();
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    console.log('🎓 Language Selection Received:', body);
+    
+    const { nativeLanguage, targetLanguage } = body;
+    
+    return createConnection({
+      nativeLanguage,
+      targetLanguage,
+    });
+  } catch (error) {
+    console.error('Error parsing request body:', error);
+    return createConnection();
+  }
+}
+
+async function createConnection(languageData?: any) {
   try {
     if (LIVEKIT_URL === undefined) {
       throw new Error('LIVEKIT_URL is not defined');
@@ -31,9 +53,35 @@ export async function GET() {
     // Generate participant token
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-    const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+    
+    // Include language info in room name if provided
+    let roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+    
+    if (languageData) {
+      // Encode language selection in room name for agent to read
+      const langInfo = `${languageData.nativeLanguage.code}_to_${languageData.targetLanguage.code}`;
+      roomName = `lang_${langInfo}_${Math.floor(Math.random() * 10_000)}`;
+      
+      console.log('🔗 Room name with language info:', roomName);
+      console.log('📋 Language data:', {
+        native: languageData.nativeLanguage,
+        target: languageData.targetLanguage
+      });
+    }
+
+    // Create token with language metadata
     const participantToken = await createParticipantToken(
-      { identity: participantIdentity, name: participantName },
+      { 
+        identity: participantIdentity, 
+        name: participantName,
+        // Include language data in token metadata if available
+        metadata: languageData ? JSON.stringify({
+          nativeLanguage: languageData.nativeLanguage.code,
+          targetLanguage: languageData.targetLanguage.code,
+          nativeLanguageName: languageData.nativeLanguage.name,
+          targetLanguageName: languageData.targetLanguage.name,
+        }) : undefined
+      },
       roomName
     );
 
@@ -44,9 +92,11 @@ export async function GET() {
       participantToken: participantToken,
       participantName,
     };
+    
     const headers = new Headers({
       'Cache-Control': 'no-store',
     });
+    
     return NextResponse.json(data, { headers });
   } catch (error) {
     if (error instanceof Error) {

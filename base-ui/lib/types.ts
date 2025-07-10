@@ -5,7 +5,19 @@ export interface CombinedTranscription extends TranscriptionSegment {
   receivedAtMediaTimestamp: number;
   receivedAt: number;
 }
+
 export type ThemeMode = 'dark' | 'light' | 'system';
+
+// Simple Language Types
+export interface Language {
+  code: string;
+  name: string;
+}
+
+export interface LanguageSelection {
+  nativeLanguage: Language;
+  targetLanguage: Language;
+}
 
 export interface AppConfig {
   pageTitle: string;
