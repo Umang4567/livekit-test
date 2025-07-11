@@ -1,8 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -10,54 +7,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { SUPPORTED_LANGUAGES } from '@/lib/constants';
-import type { Language } from '@/lib/types';
+import { Language } from '@/lib/types';
+import { Dispatch, SetStateAction } from 'react';
 
-export default function LanguageSelectionPage() {
-  const router = useRouter();
-  const [nativeLanguage, setNativeLanguage] = useState<Language | null>(null);
-  const [targetLanguage, setTargetLanguage] = useState<Language | null>(null);
-
-  const handleStart = () => {
-    if (nativeLanguage && targetLanguage) {
-      // Store selection in localStorage for the learning session
-      localStorage.setItem('languageSelection', JSON.stringify({
-        nativeLanguage,
-        targetLanguage,
-      }));
-      
-      // Navigate to learning session
-      router.push('/learn');
-    }
-  };
-
-  const isReadyToStart = nativeLanguage && targetLanguage && nativeLanguage.code !== targetLanguage.code;
+export function LanguageSelection({
+  nativeLanguage,
+  setNativeLanguage,
+  targetLanguage,
+  setTargetLanguage,
+  onSuccess,
+}: {
+  nativeLanguage: Language | undefined;
+  setNativeLanguage: Dispatch<SetStateAction<Language | undefined>>;
+  targetLanguage: Language | undefined;
+  setTargetLanguage: Dispatch<SetStateAction<Language | undefined>>;
+  onSuccess: () => void;
+}) {
+  const canContinue =
+    nativeLanguage &&
+    targetLanguage &&
+    nativeLanguage.code !== targetLanguage.code;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="flex h-full w-full flex-col items-center justify-center mt-50 ">
       <div className="w-full max-w-md space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">🎓 Language Learning</h1>
-          <p className="text-lg text-muted-foreground">
-            Choose your languages to start learning with AI
+        <div className="text-center">
+          <h1 className="text-4xl font-bold tracking-tight">Choose Your Languages</h1>
+          <p className="mt-2 text-gray-400">
+            What do you speak, and what would you like to learn?
           </p>
         </div>
-
-        {/* Language Selection Form */}
-        <div className="space-y-6 p-8 border rounded-lg bg-card">
+        <div className="space-y-6 rounded-lg bg-gray-800/50 p-8 shadow-2xl">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Your Native Language</label>
+            <label className="text-sm font-medium text-gray-300">I speak...</label>
             <Select
               onValueChange={(value) => {
-                const language = SUPPORTED_LANGUAGES.find(lang => lang.code === value);
+                const language = SUPPORTED_LANGUAGES.find((lang) => lang.code === value);
                 if (language) setNativeLanguage(language);
               }}
+              value={nativeLanguage?.code}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full rounded-md border-gray-700 bg-gray-900 py-3 text-white">
                 <SelectValue placeholder="Select your native language" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-800 text-white">
                 {SUPPORTED_LANGUAGES.map((language) => (
                   <SelectItem key={language.code} value={language.code}>
                     {language.name}
@@ -66,52 +61,36 @@ export default function LanguageSelectionPage() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
-            <label className="text-sm font-medium">Language to Learn</label>
+            <label className="text-sm font-medium text-gray-300">I want to learn...</label>
             <Select
               onValueChange={(value) => {
-                const language = SUPPORTED_LANGUAGES.find(lang => lang.code === value);
+                const language = SUPPORTED_LANGUAGES.find((lang) => lang.code === value);
                 if (language) setTargetLanguage(language);
               }}
+              value={targetLanguage?.code}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select language to learn" />
+              <SelectTrigger className="w-full rounded-md border-gray-700 bg-gray-900 py-3 text-white">
+                <SelectValue placeholder="Select the language to learn" />
               </SelectTrigger>
-              <SelectContent>
-                {SUPPORTED_LANGUAGES.filter(lang => lang.code !== nativeLanguage?.code).map((language) => (
-                  <SelectItem key={language.code} value={language.code}>
-                    {language.name}
-                  </SelectItem>
-                ))}
+              <SelectContent className="bg-gray-800 text-white">
+                {SUPPORTED_LANGUAGES.filter((l) => l.code !== nativeLanguage?.code).map(
+                  (language) => (
+                    <SelectItem key={language.code} value={language.code}>
+                      {language.name}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
           </div>
-
-          {nativeLanguage && targetLanguage && (
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm">
-                <strong>Ready to start!</strong>
-                <br />
-                We'll begin in <span className="font-medium">{nativeLanguage.name}</span> to assess your comfort level,
-                then switch to <span className="font-medium">{targetLanguage.name}</span> for your learning session.
-              </p>
-            </div>
-          )}
-
           <Button
-            onClick={handleStart}
-            disabled={!isReadyToStart}
-            className="w-full"
-            size="lg"
+            onClick={onSuccess}
+            disabled={!canContinue}
+            className="w-full rounded-md bg-blue-600 py-3 text-lg font-semibold text-white transition-transform duration-150 ease-in-out hover:scale-105 hover:bg-blue-700 disabled:scale-100 disabled:bg-gray-700"
           >
-            {isReadyToStart ? 'Start Learning Session' : 'Select Both Languages'}
+            Continue
           </Button>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground">
-          Your AI tutor will help you learn step by step with voice interaction.
         </div>
       </div>
     </div>

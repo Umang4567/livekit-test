@@ -24,28 +24,39 @@ export default function LearningSessionPage({ appConfig }: LearningSessionPagePr
   const [sessionStarted, setSessionStarted] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState<LanguageSelection | null>(null);
   const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>(null);
+  const [userInfo, setUserInfo] = useState<{name: string, scenario: string} | null>(null);
 
   // Load language selection from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('languageSelection');
-    if (stored) {
+    const storedLanguages = localStorage.getItem('languageSelection');
+    if (storedLanguages) {
       try {
-        const languages = JSON.parse(stored);
+        const languages = JSON.parse(storedLanguages);
         setSelectedLanguages(languages);
       } catch (error) {
         console.error('Error parsing language selection:', error);
+      }
+    }
+
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if(storedUserInfo) {
+      try {
+        const info = JSON.parse(storedUserInfo);
+        setUserInfo(info);
+      } catch (error) {
+        console.error('Error parsing user info:', error);
       }
     }
   }, []);
 
   // Get connection details with language data when languages are selected
   useEffect(() => {
-    if (selectedLanguages && !connectionDetails) {
-      getConnectionDetailsWithLanguages(selectedLanguages);
+    if (selectedLanguages && userInfo && !connectionDetails) {
+      getConnectionDetailsWithLanguages(selectedLanguages, userInfo);
     }
-  }, [selectedLanguages, connectionDetails]);
+  }, [selectedLanguages, userInfo, connectionDetails]);
 
-  const getConnectionDetailsWithLanguages = async (languages: LanguageSelection) => {
+  const getConnectionDetailsWithLanguages = async (languages: LanguageSelection, userInfo: {name: string, scenario: string}) => {
     try {
       console.log('📤 Sending language selection to backend:', languages);
       
@@ -54,7 +65,7 @@ export default function LearningSessionPage({ appConfig }: LearningSessionPagePr
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(languages),
+        body: JSON.stringify({ ...languages, ...userInfo }),
       });
 
       if (!response.ok) {

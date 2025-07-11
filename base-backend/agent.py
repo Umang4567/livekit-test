@@ -2,6 +2,7 @@ import sys
 import json
 import asyncio
 import base64
+import re
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
@@ -22,29 +23,33 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 load_dotenv()
 
 # Language Learning System Prompt Generator
-def generate_language_tutor_prompt(native_lang: str, target_lang: str) -> str:
+def generate_language_tutor_prompt(
+    native_lang: str, target_lang: str, user_name: str, scenario: str
+) -> str:
     return f"""
-You are a friendly and intelligent AI language tutor. IMPORTANT: You must start speaking ONLY in {native_lang}.
+You are a friendly and intelligent AI language tutor for a user named {user_name}. IMPORTANT: You must start speaking ONLY in {native_lang}.
     Talk in excited and enthusiastic tone.
-1. The user's **native language is {native_lang}**.
-2. They want to learn **{target_lang}**.
-3. **CRITICAL**: Start the conversation ONLY in {native_lang}. Do NOT speak English initially.
-4. Begin by asking the user's name, their motivation for learning {target_lang}, and if they've learned it before.
-5. Use **{native_lang}** EXCLUSIVELY in this initial phase to ensure user comfort.
+1. The user's name is **{user_name}**.
+2. Their native language is **{native_lang}**.
+3. They want to learn **{target_lang}**.
+4. The user wants to practice conversations related to **"{scenario}"**. All lessons and practice should be focused on this topic.
+5. **CRITICAL**: Start the conversation ONLY in {native_lang}. Do NOT speak English initially.
+6. Begin by warmly welcoming {user_name} by name and confirming you'll help them learn {target_lang} for the "{scenario}" scenario.
 
-Once you understand their background and skill level (after 3-4 exchanges):
-- Gently introduce that you'll now start teaching them {target_lang}
-- Begin with simple greetings and self-introduction phrases in {target_lang}
-- Always explain new {target_lang} phrases by translating them to {native_lang}
-- Be encouraging and patient
-- Ask them to repeat phrases for practice
-- If they struggle, simplify and repeat slower
+Once you have greeted the user (1-2 exchanges):
+- Gently introduce that you'll now start teaching them {target_lang} phrases related to "{scenario}".
+- Always explain new {target_lang} phrases by translating them to {native_lang}.
+- Be encouraging and patient.
+- Ask them to repeat phrases for practice.
+- Create role-playing situations based on the "{scenario}".
+- If they struggle, simplify and repeat slower.
 
 Rules:
-- NEVER mix both languages in one sentence
-- Start ONLY in {native_lang}
-- Be clear, positive, and structured like a Duolingo tutor
-- When teaching {target_lang}, always provide {native_lang} explanations
+- NEVER mix both languages in one sentence.
+- Start ONLY in {native_lang}.
+- Be clear, positive, and structured like a Duolingo tutor.
+- When teaching {target_lang}, always provide {native_lang} explanations.
+- Keep the conversation focused on the "{scenario}" topic.
 """
 
 # Default instructions if no language selection is provided
@@ -91,21 +96,27 @@ def get_sarvam_language_code(lang_code: str) -> str:
     """Convert ISO language code to Sarvam-compatible language code"""
     return LANGUAGE_CODE_MAP.get(lang_code, 'en-IN')
 
-# Native language greetings
-NATIVE_GREETINGS = {
-    'en': "Hello! I'm your personal AI language tutor. I'm excited to help you learn a new language today. Let's start by getting to know each other. What's your name?",
-    'hi': "नमस्ते! मैं आपका व्यक्तिगत AI भाषा शिक्षक हूं। आज आपको नई भाषा सिखाने के लिए मैं बहुत उत्साहित हूं। चलिए एक दूसरे को जानते हैं। आपका नाम क्या है?",
-    'es': "¡Hola! Soy tu tutor personal de idiomas con IA. Estoy emocionado de ayudarte a aprender un nuevo idioma hoy. Empecemos conociéndonos. ¿Cuál es tu nombre?",
-    'fr': "Bonjour ! Je suis votre tuteur personnel de langues IA. Je suis ravi de vous aider à apprendre une nouvelle langue aujourd'hui. Commençons par faire connaissance. Quel est votre nom ?",
-    'de': "Hallo! Ich bin Ihr persönlicher KI-Sprachtutor. Ich freue mich darauf, Ihnen heute dabei zu helfen, eine neue Sprache zu lernen. Lassen Sie uns damit beginnen, uns kennenzulernen. Wie heißen Sie?",
-    'it': "Ciao! Sono il tuo tutor personale di lingue IA. Sono entusiasta di aiutarti a imparare una nuova lingua oggi. Iniziamo conoscendoci. Come ti chiami?",
-    'pt': "Olá! Sou seu tutor pessoal de idiomas com IA. Estou animado para ajudá-lo a aprender um novo idioma hoje. Vamos começar nos conhecendo. Qual é o seu nome?",
+# templates for native language greetings
+NATIVE_GREETING_TEMPLATES = {
+    'en': "Hello {user_name}! I'm your personal AI language tutor. I'm excited to help you learn {target_lang_name} by practicing conversations about {scenario}. Let's get started!",
+    'hi': "नमस्ते {user_name}! मैं आपका व्यक्तिगत AI भाषा शिक्षक हूं। मैं आपको {scenario} के बारे में बातचीत का अभ्यास करके {target_lang_name} सीखने में मदद करने के लिए उत्साहित हूं। चलिए शुरू करते हैं!",
+    'es': "¡Hola {user_name}! Soy tu tutor personal de idiomas con IA. Estoy emocionado de ayudarte a aprender {target_lang_name} practicando conversaciones sobre {scenario}. ¡Empecemos!",
+    'fr': "Bonjour {user_name} ! Je suis votre tuteur personnel de langues IA. Je suis ravi de vous aider à apprendre le {target_lang_name} en pratiquant des conversations sur {scenario}. Commençons !",
+    'de': "Hallo {user_name}! Ich bin Ihr persönlicher KI-Sprachtutor. Ich freue mich darauf, Ihnen dabei zu helfen, {target_lang_name} zu lernen, indem wir Gespräche über {scenario} üben. Fangen wir an!",
+    'it': "Ciao {user_name}! Sono il tuo tutor personale di lingue IA. Sono entusiasta di aiutarti a imparare l' {target_lang_name} esercitandoti in conversazioni su {scenario}. Iniziamo!",
+    'pt': "Olá {user_name}! Sou seu tutor pessoal de idiomas com IA. Estou animado para ajudá-lo a aprender {target_lang_name} praticando conversas sobre {scenario}. Vamos começar!",
 }
 
-def get_native_greeting(lang_code: str, target_lang_name: str) -> str:
-    """Get greeting in native language"""
-    greeting = NATIVE_GREETINGS.get(lang_code, NATIVE_GREETINGS['en'])
-    return greeting
+
+def get_native_greeting(
+    lang_code: str, target_lang_name: str, user_name: str, scenario: str
+) -> str:
+    """Get personalized greeting in native language"""
+    template = NATIVE_GREETING_TEMPLATES.get(lang_code, NATIVE_GREETING_TEMPLATES['en'])
+    return template.format(
+        user_name=user_name, target_lang_name=target_lang_name, scenario=scenario
+    )
+
 
 def extract_language_from_room_name(room_name: str) -> dict:
     """Extract language codes from room name"""
@@ -113,13 +124,19 @@ def extract_language_from_room_name(room_name: str) -> dict:
     
     if room_name.startswith('lang_'):
         try:
-            # Extract language info from room name like: lang_hi_to_en_12345
+            # Extract language info from room name like: lang_hi_to_en_Travelchats_JohnDoe_12345
             parts = room_name.split('_')
-            if len(parts) >= 4:
+            if len(parts) >= 6:
                 native_code = parts[1]  # hi
                 target_code = parts[3]  # en
+                scenario_id = parts[4] # Travelchats
+                name_id = parts[5] # JohnDoe
                 
-                print(f"📋 Extracted from room name - Native: {native_code}, Target: {target_code}")
+                # Re-add spaces for display
+                scenario = re.sub(r'(?<!^)(?=[A-Z])', ' ', scenario_id)
+                name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name_id)
+                
+                print(f"📋 Extracted from room name - Native: {native_code}, Target: {target_code}, Scenario: {scenario}, Name: {name}")
                 
                 # Map codes to names (simplified)
                 lang_names = {
@@ -134,7 +151,9 @@ def extract_language_from_room_name(room_name: str) -> dict:
                     'nativeLanguage': native_code,
                     'targetLanguage': target_code,
                     'nativeLanguageName': lang_names.get(native_code, native_code),
-                    'targetLanguageName': lang_names.get(target_code, target_code)
+                    'targetLanguageName': lang_names.get(target_code, target_code),
+                    'name': name,
+                    'scenario': scenario,
                 }
         except Exception as e:
             print(f"❌ Error extracting language from room name: {e}")
@@ -173,6 +192,8 @@ async def entrypoint(ctx: agents.JobContext):
     target_lang_code = 'hi'
     native_lang_name = 'English'
     target_lang_name = 'Hindi'
+    name = 'Friend'
+    scenario = 'a general conversation'
     instructions = default_instructions
 
     await ctx.connect()
@@ -186,6 +207,8 @@ async def entrypoint(ctx: agents.JobContext):
         target_lang_code = room_metadata.get('targetLanguage', 'hi')
         native_lang_name = room_metadata.get('nativeLanguageName', 'English')
         target_lang_name = room_metadata.get('targetLanguageName', 'Hindi')
+        name = room_metadata.get('name', name)
+        scenario = room_metadata.get('scenario', scenario)
     else:
         # Method 2: Wait for participant metadata
         print("🔍 No room metadata found, waiting for participant...")
@@ -197,16 +220,22 @@ async def entrypoint(ctx: agents.JobContext):
             target_lang_code = participant_metadata.get('targetLanguage', 'hi')
             native_lang_name = participant_metadata.get('nativeLanguageName', 'English')
             target_lang_name = participant_metadata.get('targetLanguageName', 'Hindi')
+            name = participant_metadata.get('name', name)
+            scenario = participant_metadata.get('scenario', scenario)
 
     # Print final language configuration
     print("=" * 50)
     print(f"🎓 LANGUAGE LEARNING SESSION CONFIGURATION")
+    print(f"👋 User Name: {name}")
+    print(f"📝 Scenario: {scenario}")
     print(f"📍 Native Language: {native_lang_name} ({native_lang_code})")
     print(f"🎯 Target Language: {target_lang_name} ({target_lang_code})")
     print("=" * 50)
     
     # Generate personalized instructions
-    instructions = generate_language_tutor_prompt(native_lang_name, target_lang_name)
+    instructions = generate_language_tutor_prompt(
+        native_lang_name, target_lang_name, name, scenario
+    )
 
     # IMPORTANT: Use native language for initial TTS and STT
     tts_lang = get_sarvam_language_code(native_lang_code)
@@ -241,12 +270,14 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
     # Generate initial greeting in native language
-    native_greeting = get_native_greeting(native_lang_code, target_lang_name)
+    native_greeting = get_native_greeting(
+        native_lang_code, target_lang_name, name, scenario
+    )
     
     print(f"💬 Initial greeting: {native_greeting}")
     
     await session.generate_reply(
-        instructions=f"Greet the user warmly in their native language ({native_lang_name}). Use this exact greeting: '{native_greeting}'"
+        instructions=f"Greet the user ({name}) warmly in their native language ({native_lang_name}) and tell them you are excited to start the lesson on {scenario}. Use this exact greeting: '{native_greeting}'"
     )
 
 

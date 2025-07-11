@@ -24,21 +24,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('🎓 Language Selection Received:', body);
-    
-    const { nativeLanguage, targetLanguage } = body;
-    
-    return createConnection({
-      nativeLanguage,
-      targetLanguage,
+    console.log('Onboarding data received:', {
+      name: body.name,
+      scenario: body.scenario,
+      native_lang: body.nativeLanguage.name,
+      target_lang: body.targetLanguage.name,
     });
+
+    return createConnection(body);
   } catch (error) {
     console.error('Error parsing request body:', error);
     return createConnection();
   }
 }
 
-async function createConnection(languageData?: any) {
+async function createConnection(data?: any) {
   try {
     if (LIVEKIT_URL === undefined) {
       throw new Error('LIVEKIT_URL is not defined');
@@ -51,53 +51,59 @@ async function createConnection(languageData?: any) {
     }
 
     // Generate participant token
-    const participantName = 'user';
+    const participantName = data?.name ?? 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-    
+
     // Include language info in room name if provided
     let roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
-    
-    if (languageData) {
+
+    if (data?.nativeLanguage) {
+      const sanitizedScenario = data.scenario.replace(/\s+/g, '');
+      const sanitizedName = data.name.replace(/\s+/g, '');
       // Encode language selection in room name for agent to read
-      const langInfo = `${languageData.nativeLanguage.code}_to_${languageData.targetLanguage.code}`;
+      const langInfo = `${data.nativeLanguage.code}_to_${data.targetLanguage.code}_${sanitizedScenario}_${sanitizedName}`;
       roomName = `lang_${langInfo}_${Math.floor(Math.random() * 10_000)}`;
-      
+
       console.log('🔗 Room name with language info:', roomName);
       console.log('📋 Language data:', {
-        native: languageData.nativeLanguage,
-        target: languageData.targetLanguage
+        native: data.nativeLanguage,
+        target: data.targetLanguage,
       });
     }
 
     // Create token with language metadata
     const participantToken = await createParticipantToken(
-      { 
-        identity: participantIdentity, 
+      {
+        identity: participantIdentity,
         name: participantName,
         // Include language data in token metadata if available
-        metadata: languageData ? JSON.stringify({
-          nativeLanguage: languageData.nativeLanguage.code,
-          targetLanguage: languageData.targetLanguage.code,
-          nativeLanguageName: languageData.nativeLanguage.name,
-          targetLanguageName: languageData.targetLanguage.name,
-        }) : undefined
+        metadata: data
+          ? JSON.stringify({
+              nativeLanguage: data.nativeLanguage.code,
+              targetLanguage: data.targetLanguage.code,
+              nativeLanguageName: data.nativeLanguage.name,
+              targetLanguageName: data.targetLanguage.name,
+              name: data.name,
+              scenario: data.scenario,
+            })
+          : undefined,
       },
-      roomName
+      roomName,
     );
 
     // Return connection details
-    const data: ConnectionDetails = {
+    const connectionData: ConnectionDetails = {
       serverUrl: LIVEKIT_URL,
       roomName,
       participantToken: participantToken,
       participantName,
     };
-    
+
     const headers = new Headers({
       'Cache-Control': 'no-store',
     });
-    
-    return NextResponse.json(data, { headers });
+
+    return NextResponse.json(connectionData, { headers });
   } catch (error) {
     if (error instanceof Error) {
       console.error(error);
