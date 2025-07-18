@@ -15,10 +15,10 @@ import { Coffee, MessageSquare, Plane } from 'lucide-react';
 const SCENARIOS = [
   {
     name: 'Daily dialogues',
-    icon: <MessageSquare className="h-10 w-10 text-blue-400" />,
+    icon: <MessageSquare className="h-10 w-10 text-blue-500" />,
   },
-  { name: 'Food chats', icon: <Coffee className="h-10 w-10 text-orange-400" /> },
-  { name: 'Travel chats', icon: <Plane className="h-10 w-10 text-green-400" /> },
+  { name: 'Food chats', icon: <Coffee className="h-10 w-10 text-orange-500" /> },
+  { name: 'Travel chats', icon: <Plane className="h-10 w-10 text-green-500" /> },
 ];
 
 export function ScenarioSelection({
@@ -32,10 +32,12 @@ export function ScenarioSelection({
 }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center mt-50">
-      <div className="w-full max-w-2xl space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">What do you want to talk about?</h1>
-          <p className="mt-2 text-gray-400">Choose a scenario to practice.</p>
+      <div className="w-full max-w-2xl space-y-8 text-center">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+            What do you want to talk about?
+          </h1>
+          <p className="mt-2 text-gray-600">Choose a scenario to practice.</p>
         </div>
         <div className="space-y-6">
           <Select
@@ -45,10 +47,10 @@ export function ScenarioSelection({
             }}
             value={targetLanguage?.code}
           >
-            <SelectTrigger className="mx-auto w-full max-w-xs rounded-md border-gray-700 bg-gray-900 py-3 text-white">
+            <SelectTrigger className="mx-auto w-full max-w-xs rounded-md border-gray-300 bg-white py-3 text-gray-900">
               <SelectValue placeholder="Select a language" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 text-white">
+            <SelectContent>
               {SUPPORTED_LANGUAGES.map((language) => (
                 <SelectItem key={language.code} value={language.code}>
                   {language.name}
@@ -61,10 +63,10 @@ export function ScenarioSelection({
               <div
                 key={scenario.name}
                 onClick={() => onScenarioSelected(scenario.name)}
-                className="cursor-pointer rounded-lg border-2 border-gray-700 bg-gray-800/50 p-6 text-center transition-all duration-200 ease-in-out hover:-translate-y-1 hover:border-blue-500 hover:bg-gray-800"
+                className="cursor-pointer rounded-lg border-2 border-gray-200 bg-white p-6 text-center shadow-sm transition-all duration-200 ease-in-out hover:-translate-y-1 hover:border-blue-500 hover:shadow-lg"
               >
                 <div className="flex justify-center">{scenario.icon}</div>
-                <h2 className="mt-4 text-xl font-semibold">{scenario.name}</h2>
+                <h2 className="mt-4 text-xl font-semibold text-gray-800">{scenario.name}</h2>
               </div>
             ))}
           </div>

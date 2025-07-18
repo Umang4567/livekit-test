@@ -202,13 +202,13 @@ export function AgentControlBar({
             </Toggle>
           )}
         </div>
-        {visibleControls.leave && (
+        {/* {visibleControls.leave && (
           <Button variant="destructive" onClick={onLeave} className="font-mono">
             <PhoneDisconnectIcon weight="bold" />
             <span className="hidden md:inline">END CALL</span>
             <span className="inline md:hidden">END</span>
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );

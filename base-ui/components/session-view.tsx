@@ -152,7 +152,7 @@ export const SessionView = ({
                 }}
                 aria-hidden={messages.length > 0}
                 className={cn(
-                  'absolute inset-x-0 -top-12 text-center',
+                  'absolute inset-x-0 bottom-0 text-center',
                   sessionStarted && messages.length === 0 && 'pointer-events-none'
                 )}
               >
